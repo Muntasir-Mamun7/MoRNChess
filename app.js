@@ -89,8 +89,8 @@ stockfish.onmessage = function (event) {
 };
 
 function setEngineDifficulty(elo) {
-  const normalizedElo = Number.isFinite(elo) ? elo : MIN_ELO;
-  const clampedElo = Math.min(MAX_ELO, Math.max(MIN_ELO, normalizedElo));
+  const eloOrDefault = Number.isFinite(elo) ? elo : MIN_ELO;
+  const clampedElo = Math.min(MAX_ELO, Math.max(MIN_ELO, eloOrDefault));
   const skillLevel = Math.round(((clampedElo - MIN_ELO) / ELO_RANGE) * MAX_SKILL_LEVEL);
   stockfish.postMessage(`setoption name Skill Level value ${skillLevel}`);
 }
@@ -110,7 +110,7 @@ function renderLessonInstructions() {
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Engine Match</p>
         <h3 class="text-lg font-semibold text-slate-100">Play vs. AI Mode</h3>
         <p>Make a legal move as White. The engine replies automatically at low depth for fast practice.</p>
-        <p class="text-sm text-slate-400">Selected level: ${userSelectedElo ? `${userSelectedElo} ELO` : "Not yet selected"}</p>
+        <p class="text-sm text-slate-400">Selected level: ${userSelectedElo} ELO</p>
         ${
           feedbackMessage
             ? `<p class="text-sm font-medium text-emerald-300">${feedbackMessage}</p>`
@@ -222,8 +222,7 @@ function returnToLessonMode() {
   feedbackMessage = "";
   renderModeStatus();
   if (activeLessonIndex >= lessons.length) {
-    renderLessonInstructions();
-    board.position(game.fen());
+    loadLesson(0);
     return;
   }
   loadLesson(activeLessonIndex);
