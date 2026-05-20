@@ -344,6 +344,7 @@ function handleMove(source, target) {
 
 onboardingCardElements.forEach((cardElement) => {
   cardElement.addEventListener("click", () => {
+    let engineInitializationFailed = false;
     selectedElo = Number(cardElement.dataset.elo);
     onboardingModalElement.classList.add("hidden");
     interactiveDashboardElement.classList.remove("hidden");
@@ -356,9 +357,15 @@ onboardingCardElements.forEach((cardElement) => {
     try {
       initStockfish(selectedElo);
     } catch (error) {
+      console.error("Stockfish failed to initialize.", error);
       stockfish = null;
+      engineInitializationFailed = true;
     }
     enterEngineMatchMode();
+    if (engineInitializationFailed) {
+      feedbackMessage = "Engine could not start. You can still practice in lesson mode.";
+      renderLessonInstructions();
+    }
   });
 });
 
