@@ -89,6 +89,19 @@
           A beginner-friendly, interactive platform to help you learn chess step by step.
           Start with core concepts, practice in real time, and improve with guided support.
         </p>
+        <div class="mt-6 grid gap-5 lg:grid-cols-2">
+          <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">Beginner Lessons</h2>
+            <p class="mt-2 text-sm text-slate-400">Click any lesson to load it instantly on the board.</p>
+            <div id="lesson-list" class="mt-4 grid gap-2"></div>
+          </div>
+          <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">Chess Guide</h2>
+            <div id="guide-content" class="mt-3 text-slate-300">
+              Beginner guide will appear here after selecting your level.
+            </div>
+          </div>
+        </div>
       </section>
 
       <section id="play" class="grid gap-6 lg:grid-cols-3">
@@ -111,7 +124,7 @@
               type="button"
               class="rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-slate-100 transition hover:border-emerald-400 hover:text-emerald-300"
             >
-              Analyze Move
+              AI Review Position
             </button>
           </div>
           <div id="chess-board" class="w-full max-w-[450px] mx-auto"></div>
@@ -132,6 +145,13 @@
             class="rounded-xl border border-dashed border-slate-700 bg-slate-950/50 p-4 text-slate-300"
           >
             Personalized AI tutor guidance will appear here.
+          </div>
+          <div class="mt-4 rounded-xl border border-slate-700 bg-slate-950/50 p-4">
+            <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">Unlimited AI Reviews</h3>
+            <p id="analysis-output" class="mt-2 text-sm text-slate-300">
+              Press “AI Review Position” to get feedback for the current position.
+            </p>
+            <ul id="review-history" class="mt-3 max-h-48 space-y-2 overflow-auto pr-1 text-sm text-slate-300"></ul>
           </div>
         </aside>
       </section>
