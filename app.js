@@ -178,7 +178,11 @@ function ensureBoardReady() {
 
   if (!boardResizeObserver && typeof ResizeObserver !== "undefined") {
     boardResizeObserver = new ResizeObserver(() => {
-      scheduleBoardResizeDebounced();
+      try {
+        scheduleBoardResizeDebounced();
+      } catch (error) {
+        console.error("Board resize observer failed.", error);
+      }
     });
     boardResizeObserver.observe(boardElement);
   }
@@ -186,27 +190,25 @@ function ensureBoardReady() {
 
 
 function scheduleBoardResizeDebounced() {
-  const activeBoard = board;
-  if (!activeBoard) {
+  if (!board) {
     return;
   }
 
   window.clearTimeout(boardResizeTimeoutId);
   boardResizeTimeoutId = window.setTimeout(() => {
-    activeBoard.resize();
+    board?.resize();
   }, BOARD_RESIZE_DEBOUNCE_MS);
 }
 
 function resizeBoardWhenVisible() {
-  const activeBoard = board;
-  if (!activeBoard) {
+  if (!board) {
     return;
   }
 
   window.requestAnimationFrame(() => {
-    activeBoard.resize();
+    board?.resize();
     window.setTimeout(() => {
-      activeBoard.resize();
+      board?.resize();
     }, BOARD_RESIZE_DELAY_MS);
   });
 }
