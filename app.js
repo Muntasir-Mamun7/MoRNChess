@@ -113,6 +113,7 @@ const REVIEW_SEARCH_DEPTH = 10;
 const BLACK_TURN = "b";
 const ELO_PER_SKILL_LEVEL = 80;
 const REVIEW_HISTORY_LIMIT = 200;
+const BOARD_RESIZE_DELAY_MS = 120;
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
@@ -156,6 +157,7 @@ let isEngineThinking = false;
 let stockfish = null;
 let reviewStockfish = null;
 let board = null;
+let boardResizeObserver = null;
 let reviewRequest = null;
 const reviewHistory = [];
 
@@ -170,6 +172,15 @@ function ensureBoardReady() {
     onDragStart: handleDragStart,
     onDrop: handleMove,
   });
+
+  if (!boardResizeObserver && typeof ResizeObserver !== "undefined") {
+    boardResizeObserver = new ResizeObserver(() => {
+      if (board) {
+        board.resize();
+      }
+    });
+    boardResizeObserver.observe(boardElement);
+  }
 }
 
 
@@ -182,12 +193,11 @@ function resizeBoardWhenVisible() {
     if (board) {
       board.resize();
     }
-
     window.setTimeout(() => {
       if (board) {
         board.resize();
       }
-    }, 120);
+    }, BOARD_RESIZE_DELAY_MS);
   });
 }
 
@@ -664,12 +674,6 @@ restartGameButton.addEventListener("click", () => {
 
 analyzeMoveButton.addEventListener("click", () => {
   requestPositionReview();
-});
-
-window.addEventListener("resize", () => {
-  if (board) {
-    board.resize();
-  }
 });
 
 renderModeStatus();
