@@ -186,31 +186,27 @@ function ensureBoardReady() {
 
 
 function scheduleBoardResizeDebounced() {
-  if (!board) {
+  const activeBoard = board;
+  if (!activeBoard) {
     return;
   }
 
   window.clearTimeout(boardResizeTimeoutId);
   boardResizeTimeoutId = window.setTimeout(() => {
-    if (board) {
-      board.resize();
-    }
+    activeBoard.resize();
   }, BOARD_RESIZE_DEBOUNCE_MS);
 }
 
 function resizeBoardWhenVisible() {
-  if (!board) {
+  const activeBoard = board;
+  if (!activeBoard) {
     return;
   }
 
   window.requestAnimationFrame(() => {
-    if (board) {
-      board.resize();
-    }
+    activeBoard.resize();
     window.setTimeout(() => {
-      if (board) {
-        board.resize();
-      }
+      activeBoard.resize();
     }, BOARD_RESIZE_DELAY_MS);
   });
 }
