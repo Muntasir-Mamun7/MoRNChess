@@ -100,6 +100,15 @@ function getActiveLesson() {
   return lessons[activeLessonIndex];
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function renderModeStatus() {
   modeStatusElement.textContent = isEngineMatchMode ? "Mode: Play vs. AI" : "Mode: Lesson";
 }
@@ -114,7 +123,7 @@ function renderLessonInstructions() {
         <p class="text-sm text-slate-400">Selected level: ${userSelectedElo} ELO</p>
         ${
           feedbackMessage
-            ? `<p class="text-sm font-medium text-emerald-300">${feedbackMessage}</p>`
+            ? `<p class="text-sm font-medium text-emerald-300">${escapeHtml(feedbackMessage)}</p>`
             : ""
         }
       </div>
@@ -142,7 +151,7 @@ function renderLessonInstructions() {
         <p class="text-sm text-slate-400">Drag the piece from the lesson position to practice the move.</p>
         ${
           feedbackMessage
-            ? `<p class="text-sm font-medium text-amber-300">${feedbackMessage}</p>`
+            ? `<p class="text-sm font-medium text-amber-300">${escapeHtml(feedbackMessage)}</p>`
             : ""
         }
       </div>
@@ -154,7 +163,7 @@ function renderLessonInstructions() {
         <p>You completed the first beginner lessons. Refresh the page to practice them again.</p>
         ${
           feedbackMessage
-            ? `<p class="text-sm font-medium text-emerald-300">${feedbackMessage}</p>`
+            ? `<p class="text-sm font-medium text-emerald-300">${escapeHtml(feedbackMessage)}</p>`
             : ""
         }
       </div>
@@ -208,11 +217,6 @@ function advanceLesson() {
 }
 
 function enterEngineMatchMode() {
-  if (!Number.isFinite(userSelectedElo)) {
-    userSelectedElo = MIN_ELO;
-    setEngineDifficulty(userSelectedElo);
-  }
-
   isEngineMatchMode = true;
   isEngineThinking = false;
   feedbackMessage = "Engine match enabled. Your move as White.";
