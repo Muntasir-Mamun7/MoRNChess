@@ -722,9 +722,9 @@ onboardingCardElements.forEach((cardElement) => {
     returnToLessonMode();
 
     if (!hasFullChessRuntime()) {
-      showRuntimeError("Some interactive chess features did not load, so the interactive board is limited right now.");
+      showRuntimeError("Some interactive chess features did not load. The interactive board is limited right now—please reload to try again.");
       analysisOutputElement.textContent =
-        "AI reviews are unavailable until interactive chess features load successfully.";
+        "AI reviews are unavailable until interactive chess features load successfully. Please reload to try again.";
       return;
     }
 
