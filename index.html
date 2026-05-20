@@ -42,6 +42,7 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <button
             type="button"
+            id="lvl-beginner"
             class="onboarding-level-card rounded-2xl border border-slate-700 bg-slate-950/70 p-5 text-left transition hover:border-emerald-400 hover:bg-slate-800"
             data-elo="300"
           >
@@ -50,6 +51,7 @@
           </button>
           <button
             type="button"
+            id="lvl-novice"
             class="onboarding-level-card rounded-2xl border border-slate-700 bg-slate-950/70 p-5 text-left transition hover:border-emerald-400 hover:bg-slate-800"
             data-elo="500"
           >
@@ -58,6 +60,7 @@
           </button>
           <button
             type="button"
+            id="lvl-emerging"
             class="onboarding-level-card rounded-2xl border border-slate-700 bg-slate-950/70 p-5 text-left transition hover:border-emerald-400 hover:bg-slate-800"
             data-elo="700"
           >
@@ -66,6 +69,7 @@
           </button>
           <button
             type="button"
+            id="lvl-competitor"
             class="onboarding-level-card rounded-2xl border border-slate-700 bg-slate-950/70 p-5 text-left transition hover:border-emerald-400 hover:bg-slate-800"
             data-elo="900"
           >
@@ -90,6 +94,26 @@
       <section id="play" class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <h2 class="mb-4 text-xl font-semibold text-emerald-300">Chessboard Area</h2>
+          <div
+            id="game-actions"
+            class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/60 p-3"
+          >
+            <p class="mr-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Game Actions</p>
+            <button
+              id="restart-game-button"
+              type="button"
+              class="rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-slate-100 transition hover:border-emerald-400 hover:text-emerald-300"
+            >
+              Restart Game
+            </button>
+            <button
+              id="analyze-move-button"
+              type="button"
+              class="rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-slate-100 transition hover:border-emerald-400 hover:text-emerald-300"
+            >
+              Analyze Move
+            </button>
+          </div>
           <div id="chess-board" class="w-full max-w-[450px] mx-auto"></div>
         </div>
 
