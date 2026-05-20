@@ -130,6 +130,8 @@ const lessonListElement = document.getElementById("lesson-list");
 const guideContentElement = document.getElementById("guide-content");
 const analysisOutputElement = document.getElementById("analysis-output");
 const reviewHistoryElement = document.getElementById("review-history");
+const hasChessRuntime = typeof Chess !== "undefined";
+const hasChessboardRuntime = typeof Chessboard !== "undefined";
 
 if (
   !boardElement ||
@@ -143,14 +145,12 @@ if (
   !lessonListElement ||
   !guideContentElement ||
   !analysisOutputElement ||
-  !reviewHistoryElement ||
-  typeof Chess === "undefined" ||
-  typeof Chessboard === "undefined"
+  !reviewHistoryElement
 ) {
   throw new Error("MoRNChess could not load the chess lesson board.");
 }
 
-const game = new Chess();
+const game = hasChessRuntime ? new Chess() : null;
 let activeLessonIndex = 0;
 let feedbackMessage = "";
 let selectedElo = MIN_ELO;
@@ -165,6 +165,10 @@ let reviewRequest = null;
 const reviewHistory = [];
 
 function ensureBoardReady() {
+  if (!hasChessboardRuntime) {
+    return;
+  }
+
   if (board) {
     return;
   }
@@ -214,6 +218,10 @@ function resizeBoardWhenVisible() {
 }
 
 function initStockfish(elo) {
+  if (!hasChessRuntime || !game) {
+    return;
+  }
+
   const eloOrDefault = Number.isFinite(elo) ? elo : MIN_ELO;
   const clampedElo = Math.min(MAX_ELO, Math.max(MIN_ELO, eloOrDefault));
   const skillLevel = Math.max(
@@ -272,6 +280,10 @@ function formatScoreLabel(scoreType, scoreValue) {
 }
 
 function initReviewEngine() {
+  if (!hasChessRuntime || !game) {
+    return;
+  }
+
   if (reviewStockfish) {
     reviewStockfish.terminate();
   }
@@ -395,6 +407,25 @@ function renderModeStatus() {
 }
 
 function renderLessonInstructions() {
+  if (!hasChessRuntime || !hasChessboardRuntime || !game) {
+    instructionsElement.innerHTML = `
+      <div class="space-y-4">
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">Limited Mode</p>
+        <h3 class="text-lg font-semibold text-slate-100">Interactive board could not start</h3>
+        <p>Some external chess libraries did not load in your browser/session.</p>
+        <p class="text-sm text-slate-300">Reload the page or try a different network/browser to enable full lessons and AI play.</p>
+        ${
+          feedbackMessage
+            ? `<p class="text-sm font-medium text-amber-300">${escapeHtml(feedbackMessage)}</p>`
+            : ""
+        }
+      </div>
+    `;
+    renderGuideContent();
+    renderLessonList();
+    return;
+  }
+
   if (currentMode === "play") {
     instructionsElement.innerHTML = `
       <div class="space-y-4">
@@ -467,6 +498,13 @@ function handleDragStart(source, piece) {
 }
 
 function loadLesson(index) {
+  if (!hasChessRuntime || !hasChessboardRuntime || !game) {
+    activeLessonIndex = index;
+    feedbackMessage = "Lesson board is unavailable right now.";
+    renderLessonInstructions();
+    return;
+  }
+
   ensureBoardReady();
   resizeBoardWhenVisible();
   activeLessonIndex = index;
@@ -503,6 +541,12 @@ function advanceLesson() {
 }
 
 function enterEngineMatchMode() {
+  if (!hasChessRuntime || !hasChessboardRuntime || !game) {
+    feedbackMessage = "Play mode is unavailable because the board engine did not load.";
+    renderLessonInstructions();
+    return;
+  }
+
   ensureBoardReady();
   currentMode = "play";
   isEngineThinking = false;
@@ -522,6 +566,12 @@ function returnToLessonMode() {
 }
 
 function requestEngineMove() {
+  if (!hasChessRuntime || !game) {
+    feedbackMessage = "Engine match is unavailable right now.";
+    renderLessonInstructions();
+    return;
+  }
+
   if (currentMode !== "play" || game.turn() !== BLACK_TURN) {
     return;
   }
@@ -547,6 +597,12 @@ function addReviewEntry(text) {
 }
 
 function requestPositionReview() {
+  if (!hasChessRuntime || !game) {
+    analysisOutputElement.textContent =
+      "AI review is unavailable because the chess engine did not load.";
+    return;
+  }
+
   if (!reviewStockfish) {
     analysisOutputElement.textContent =
       "AI review engine is not available in this browser right now. Try reloading the page.";
@@ -570,6 +626,10 @@ function requestPositionReview() {
 }
 
 function handleMove(source, target) {
+  if (!hasChessRuntime || !hasChessboardRuntime || !game) {
+    return "snapback";
+  }
+
   if (isEngineThinking) {
     return "snapback";
   }
@@ -654,6 +714,15 @@ onboardingCardElements.forEach((cardElement) => {
     }
 
     returnToLessonMode();
+
+    if (!hasChessRuntime || !hasChessboardRuntime || !game) {
+      feedbackMessage =
+        "Some core chess libraries did not load, so the interactive board is limited right now.";
+      renderLessonInstructions();
+      analysisOutputElement.textContent =
+        "AI reviews are unavailable until the chess libraries load successfully.";
+      return;
+    }
 
     if (!stockfish) {
       feedbackMessage =
