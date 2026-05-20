@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MoRNChess - Learn Chess for Free</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body class="bg-slate-950 text-slate-100 min-h-screen">
@@ -37,22 +41,24 @@
       <section id="play" class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <h2 class="mb-4 text-xl font-semibold text-emerald-300">Chessboard Area</h2>
-          <div
-            class="chessboard-placeholder flex h-[22rem] items-center justify-center rounded-xl border border-dashed border-emerald-400/50 bg-slate-950/60 text-center text-slate-300"
-          >
-            Chessboard will render here soon.
-          </div>
+          <div id="chess-board" class="w-full max-w-[450px] mx-auto"></div>
         </div>
 
         <aside id="about" class="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <h2 class="mb-4 text-xl font-semibold text-emerald-300">AI Tutor Instructions</h2>
-          <div class="rounded-xl border border-dashed border-slate-700 bg-slate-950/50 p-4 text-slate-300">
+          <div
+            id="lesson-instructions"
+            class="rounded-xl border border-dashed border-slate-700 bg-slate-950/50 p-4 text-slate-300"
+          >
             Personalized AI tutor guidance will appear here.
           </div>
         </aside>
       </section>
     </main>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
