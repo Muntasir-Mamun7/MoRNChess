@@ -52,7 +52,7 @@ if (
 const game = new Chess();
 let activeLessonIndex = 0;
 let feedbackMessage = "";
-let selectedElo = 200;
+let selectedElo = MIN_ELO;
 let currentMode = "play";
 let isEngineThinking = false;
 let stockfish = null;
@@ -112,6 +112,10 @@ function initStockfish(elo) {
 
 function getActiveLesson() {
   return lessons[activeLessonIndex];
+}
+
+function getSafeLessonIndex() {
+  return activeLessonIndex < lessons.length ? activeLessonIndex : 0;
 }
 
 function escapeHtml(value) {
@@ -246,15 +250,16 @@ function returnToLessonMode() {
   isEngineThinking = false;
   feedbackMessage = "";
   renderModeStatus();
-  if (activeLessonIndex >= lessons.length) {
-    loadLesson(0);
-    return;
-  }
-  loadLesson(activeLessonIndex);
+  loadLesson(getSafeLessonIndex());
 }
 
 function requestEngineMove() {
-  if (!stockfish || currentMode !== "play" || game.turn() !== BLACK_TURN) {
+  if (currentMode !== "play" || game.turn() !== BLACK_TURN) {
+    return;
+  }
+  if (!stockfish) {
+    feedbackMessage = "Engine is not ready yet. Please restart from onboarding.";
+    renderLessonInstructions();
     return;
   }
   isEngineThinking = true;
@@ -351,8 +356,7 @@ restartGameButton.addEventListener("click", () => {
     enterEngineMatchMode();
     return;
   }
-  const lessonIndexToLoad = activeLessonIndex < lessons.length ? activeLessonIndex : 0;
-  loadLesson(lessonIndexToLoad);
+  loadLesson(getSafeLessonIndex());
 });
 
 analyzeMoveButton.addEventListener("click", () => {
