@@ -56,13 +56,20 @@ let selectedElo = MIN_ELO;
 let currentMode = "play";
 let isEngineThinking = false;
 let stockfish = null;
+let board = null;
 
-const board = Chessboard("chess-board", {
-  draggable: true,
-  position: "start",
-  onDragStart: handleDragStart,
-  onDrop: handleMove,
-});
+function ensureBoardReady() {
+  if (board) {
+    return;
+  }
+
+  board = Chessboard("chess-board", {
+    draggable: true,
+    position: "start",
+    onDragStart: handleDragStart,
+    onDrop: handleMove,
+  });
+}
 
 function initStockfish(elo) {
   const eloOrDefault = Number.isFinite(elo) ? elo : MIN_ELO;
@@ -202,6 +209,7 @@ function handleDragStart(source, piece) {
 }
 
 function loadLesson(index) {
+  ensureBoardReady();
   activeLessonIndex = index;
   feedbackMessage = "";
 
@@ -236,6 +244,7 @@ function advanceLesson() {
 }
 
 function enterEngineMatchMode() {
+  ensureBoardReady();
   currentMode = "play";
   isEngineThinking = false;
   feedbackMessage = "Engine match enabled. Your move as White.";
@@ -338,7 +347,17 @@ onboardingCardElements.forEach((cardElement) => {
     selectedElo = Number(cardElement.dataset.elo);
     onboardingModalElement.classList.add("hidden");
     interactiveDashboardElement.classList.remove("hidden");
-    initStockfish(selectedElo);
+    ensureBoardReady();
+    window.requestAnimationFrame(() => {
+      if (board) {
+        board.resize();
+      }
+    });
+    try {
+      initStockfish(selectedElo);
+    } catch (error) {
+      stockfish = null;
+    }
     enterEngineMatchMode();
   });
 });
