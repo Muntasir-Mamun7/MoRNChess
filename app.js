@@ -56,13 +56,20 @@ let selectedElo = MIN_ELO;
 let currentMode = "play";
 let isEngineThinking = false;
 let stockfish = null;
+let board = null;
 
-const board = Chessboard("chess-board", {
-  draggable: true,
-  position: "start",
-  onDragStart: handleDragStart,
-  onDrop: handleMove,
-});
+function ensureBoardReady() {
+  if (board) {
+    return;
+  }
+
+  board = Chessboard("chess-board", {
+    draggable: true,
+    position: "start",
+    onDragStart: handleDragStart,
+    onDrop: handleMove,
+  });
+}
 
 function initStockfish(elo) {
   const eloOrDefault = Number.isFinite(elo) ? elo : MIN_ELO;
@@ -202,6 +209,7 @@ function handleDragStart(source, piece) {
 }
 
 function loadLesson(index) {
+  ensureBoardReady();
   activeLessonIndex = index;
   feedbackMessage = "";
 
@@ -236,6 +244,7 @@ function advanceLesson() {
 }
 
 function enterEngineMatchMode() {
+  ensureBoardReady();
   currentMode = "play";
   isEngineThinking = false;
   feedbackMessage = "Engine match enabled. Your move as White.";
@@ -336,10 +345,23 @@ function handleMove(source, target) {
 onboardingCardElements.forEach((cardElement) => {
   cardElement.addEventListener("click", () => {
     selectedElo = Number(cardElement.dataset.elo);
+    const eloLabel = Number.isFinite(selectedElo) ? selectedElo : MIN_ELO;
     onboardingModalElement.classList.add("hidden");
     interactiveDashboardElement.classList.remove("hidden");
-    initStockfish(selectedElo);
+    ensureBoardReady();
+    window.requestAnimationFrame(() => board.resize());
+    try {
+      initStockfish(selectedElo);
+    } catch (error) {
+      console.error(`Stockfish failed to initialize for ${eloLabel} ELO.`, error);
+      stockfish = null;
+    }
     enterEngineMatchMode();
+    if (!stockfish) {
+      feedbackMessage =
+        "Engine could not start (browser worker loading issue). You can still practice in lesson mode.";
+      renderLessonInstructions();
+    }
   });
 });
 
