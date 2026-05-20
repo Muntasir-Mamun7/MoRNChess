@@ -164,8 +164,8 @@ let boardResizeTimeoutId = null;
 let reviewRequest = null;
 const reviewHistory = [];
 
-function isChessAvailable() {
-  return hasChessRuntime && hasChessboardRuntime;
+function hasFullChessRuntime() {
+  return hasChessRuntime && hasChessboardRuntime && Boolean(game);
 }
 
 function showRuntimeError(message) {
@@ -416,12 +416,12 @@ function renderModeStatus() {
 }
 
 function renderLessonInstructions() {
-  if (!isChessAvailable()) {
+  if (!hasFullChessRuntime()) {
     instructionsElement.innerHTML = `
       <div class="space-y-4">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">Limited Mode</p>
         <h3 class="text-lg font-semibold text-slate-100">Interactive board could not start</h3>
-        <p>Some external chess libraries did not load in your browser/session.</p>
+        <p>The Chess.js and/or Chessboard.js libraries did not load in your browser/session.</p>
         <p class="text-sm text-slate-300">Reload the page or try a different network/browser to enable full lessons and AI play.</p>
         ${
           feedbackMessage
@@ -507,7 +507,7 @@ function handleDragStart(source, piece) {
 }
 
 function loadLesson(index) {
-  if (!isChessAvailable()) {
+  if (!hasFullChessRuntime()) {
     activeLessonIndex = index;
     showRuntimeError("Lesson board is unavailable right now.");
     return;
@@ -549,7 +549,7 @@ function advanceLesson() {
 }
 
 function enterEngineMatchMode() {
-  if (!isChessAvailable()) {
+  if (!hasFullChessRuntime()) {
     showRuntimeError("Play mode is unavailable because the board engine did not load.");
     return;
   }
@@ -573,7 +573,7 @@ function returnToLessonMode() {
 }
 
 function requestEngineMove() {
-  if (!hasChessRuntime) {
+  if (!hasChessRuntime || !game) {
     showRuntimeError("Engine match is unavailable right now.");
     return;
   }
@@ -603,7 +603,7 @@ function addReviewEntry(text) {
 }
 
 function requestPositionReview() {
-  if (!hasChessRuntime) {
+  if (!hasChessRuntime || !game) {
     analysisOutputElement.textContent =
       "AI review is unavailable because the chess engine did not load.";
     return;
@@ -632,7 +632,7 @@ function requestPositionReview() {
 }
 
 function handleMove(source, target) {
-  if (!isChessAvailable()) {
+  if (!hasFullChessRuntime()) {
     return "snapback";
   }
 
@@ -721,7 +721,7 @@ onboardingCardElements.forEach((cardElement) => {
 
     returnToLessonMode();
 
-    if (!isChessAvailable()) {
+    if (!hasFullChessRuntime()) {
       showRuntimeError("Some core chess libraries did not load, so the interactive board is limited right now.");
       analysisOutputElement.textContent =
         "AI reviews are unavailable until the chess libraries load successfully.";
