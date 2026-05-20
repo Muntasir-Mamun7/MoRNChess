@@ -345,18 +345,15 @@ function handleMove(source, target) {
 onboardingCardElements.forEach((cardElement) => {
   cardElement.addEventListener("click", () => {
     selectedElo = Number(cardElement.dataset.elo);
+    const eloLabel = Number.isFinite(selectedElo) ? selectedElo : MIN_ELO;
     onboardingModalElement.classList.add("hidden");
     interactiveDashboardElement.classList.remove("hidden");
     ensureBoardReady();
-    window.requestAnimationFrame(() => {
-      if (board) {
-        board.resize();
-      }
-    });
+    window.requestAnimationFrame(() => board.resize());
     try {
       initStockfish(selectedElo);
     } catch (error) {
-      console.error(`Stockfish failed to initialize for ${selectedElo} ELO.`, error);
+      console.error(`Stockfish failed to initialize for ${eloLabel} ELO.`, error);
       stockfish = null;
     }
     enterEngineMatchMode();
