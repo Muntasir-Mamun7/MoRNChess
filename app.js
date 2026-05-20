@@ -66,7 +66,8 @@ stockfish.onmessage = function (event) {
     return;
   }
 
-  const bestMoveToken = message.split(" ")[1];
+  const messageTokens = message.trim().split(/\s+/);
+  const bestMoveToken = messageTokens.length > 1 ? messageTokens[1] : null;
   if (!bestMoveToken || bestMoveToken.length < 4 || bestMoveToken === "(none)" || !isEngineMatchMode) {
     isEngineThinking = false;
     return;
@@ -109,7 +110,7 @@ function renderLessonInstructions() {
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Engine Match</p>
         <h3 class="text-lg font-semibold text-slate-100">Play vs. AI Mode</h3>
         <p>Make a legal move as White. The engine replies automatically at low depth for fast practice.</p>
-        <p class="text-sm text-slate-400">Selected level: ${userSelectedElo || MIN_ELO} ELO</p>
+        <p class="text-sm text-slate-400">Selected level: ${userSelectedElo ? `${userSelectedElo} ELO` : "Not yet selected"}</p>
         ${
           feedbackMessage
             ? `<p class="text-sm font-medium text-emerald-300">${feedbackMessage}</p>`
@@ -255,7 +256,7 @@ function handleMove(source, target) {
     isEngineThinking = true;
     feedbackMessage = `You played ${move.from}${move.to}. Engine is thinking...`;
     renderLessonInstructions();
-    stockfish.postMessage("position fen " + game.fen());
+    stockfish.postMessage(`position fen ${game.fen()}`);
     stockfish.postMessage("go depth 5");
     return;
   }
