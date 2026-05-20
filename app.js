@@ -19,26 +19,102 @@ const lessons = [
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
+const onboardingModalElement = document.getElementById("onboarding-modal");
+const onboardingCardElements = document.querySelectorAll(".onboarding-level-card");
+const interactiveDashboardElement = document.getElementById("interactive-dashboard");
+const engineModeToggleButton = document.getElementById("engine-mode-toggle");
+const modeStatusElement = document.getElementById("mode-status");
 
-if (!boardElement || !instructionsElement || typeof Chess === "undefined" || typeof Chessboard === "undefined") {
+if (
+  !boardElement ||
+  !instructionsElement ||
+  !onboardingModalElement ||
+  !interactiveDashboardElement ||
+  !engineModeToggleButton ||
+  !modeStatusElement ||
+  typeof Chess === "undefined" ||
+  typeof Chessboard === "undefined"
+) {
   throw new Error("MoRNChess could not load the chess lesson board.");
 }
 
+const stockfish = new Worker("https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js");
 const game = new Chess();
 let activeLessonIndex = 0;
 let feedbackMessage = "";
+let userSelectedElo = null;
+let isEngineMatchMode = false;
+let isEngineThinking = false;
 
 const board = Chessboard("chess-board", {
   draggable: true,
   position: "start",
+  onDragStart: handleDragStart,
   onDrop: handleMove,
 });
+
+stockfish.postMessage("uci");
+
+stockfish.onmessage = function (event) {
+  const message = typeof event.data === "string" ? event.data : "";
+  if (!message.startsWith("bestmove")) {
+    return;
+  }
+
+  const bestMoveToken = message.split(" ")[1];
+  if (!bestMoveToken || bestMoveToken.length < 4 || bestMoveToken === "(none)" || !isEngineMatchMode) {
+    isEngineThinking = false;
+    return;
+  }
+
+  const engineMove = game.move({
+    from: bestMoveToken.slice(0, 2),
+    to: bestMoveToken.slice(2, 4),
+    promotion: bestMoveToken.length > 4 ? bestMoveToken.slice(4, 5) : "q",
+  });
+
+  if (engineMove) {
+    board.position(game.fen());
+    feedbackMessage = `Engine played ${bestMoveToken}. Your turn.`;
+    renderLessonInstructions();
+  }
+
+  isEngineThinking = false;
+};
+
+function setEngineDifficulty(elo) {
+  const normalizedElo = Number.isFinite(elo) ? elo : 200;
+  const clampedElo = Math.min(1000, Math.max(200, normalizedElo));
+  const skillLevel = Math.round(((clampedElo - 200) / 800) * 10);
+  stockfish.postMessage(`setoption name Skill Level value ${skillLevel}`);
+}
 
 function getActiveLesson() {
   return lessons[activeLessonIndex];
 }
 
+function renderModeStatus() {
+  modeStatusElement.textContent = isEngineMatchMode ? "Mode: Play vs. AI" : "Mode: Lesson";
+}
+
 function renderLessonInstructions() {
+  if (isEngineMatchMode) {
+    instructionsElement.innerHTML = `
+      <div class="space-y-4">
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Engine Match</p>
+        <h3 class="text-lg font-semibold text-slate-100">Play vs. AI Mode</h3>
+        <p>Make a legal move as White. The engine replies automatically at low depth for fast practice.</p>
+        <p class="text-sm text-slate-400">Selected level: ${userSelectedElo || 200} ELO</p>
+        ${
+          feedbackMessage
+            ? `<p class="text-sm font-medium text-emerald-300">${feedbackMessage}</p>`
+            : ""
+        }
+      </div>
+    `;
+    return;
+  }
+
   const activeLesson = getActiveLesson();
   const totalLessons = lessons.length;
   const progressLabel = activeLesson
@@ -78,6 +154,18 @@ function renderLessonInstructions() {
     `;
 }
 
+function handleDragStart(source, piece) {
+  if (isEngineThinking) {
+    return false;
+  }
+
+  if (isEngineMatchMode) {
+    return piece.startsWith("w") && game.turn() === "w";
+  }
+
+  return true;
+}
+
 function loadLesson(index) {
   activeLessonIndex = index;
   feedbackMessage = "";
@@ -112,7 +200,61 @@ function advanceLesson() {
   renderLessonInstructions();
 }
 
+function enterEngineMatchMode() {
+  isEngineMatchMode = true;
+  isEngineThinking = false;
+  feedbackMessage = "Engine match enabled. Your move as White.";
+  game.reset();
+  board.position("start");
+  renderModeStatus();
+  renderLessonInstructions();
+}
+
+function returnToLessonMode() {
+  isEngineMatchMode = false;
+  isEngineThinking = false;
+  feedbackMessage = "";
+  renderModeStatus();
+  if (activeLessonIndex >= lessons.length) {
+    renderLessonInstructions();
+    board.position(game.fen());
+    return;
+  }
+  loadLesson(activeLessonIndex);
+}
+
 function handleMove(source, target) {
+  if (isEngineThinking) {
+    return "snapback";
+  }
+
+  if (isEngineMatchMode) {
+    const move = game.move({
+      from: source,
+      to: target,
+      promotion: "q",
+    });
+
+    if (!move) {
+      return "snapback";
+    }
+
+    board.position(game.fen());
+
+    if (game.game_over()) {
+      feedbackMessage = "Game over. Toggle Engine Match to restart or switch back to lessons.";
+      renderLessonInstructions();
+      return;
+    }
+
+    isEngineThinking = true;
+    feedbackMessage = `You played ${move.from}${move.to}. Engine is thinking...`;
+    renderLessonInstructions();
+    stockfish.postMessage("position fen " + game.fen());
+    stockfish.postMessage("go depth 5");
+    return;
+  }
+
   const activeLesson = getActiveLesson();
 
   if (!activeLesson) {
@@ -148,5 +290,24 @@ function handleMove(source, target) {
   renderLessonInstructions();
   advanceLesson();
 }
+
+onboardingCardElements.forEach((cardElement) => {
+  cardElement.addEventListener("click", () => {
+    userSelectedElo = Number(cardElement.dataset.elo);
+    setEngineDifficulty(userSelectedElo);
+    onboardingModalElement.classList.add("hidden");
+    interactiveDashboardElement.classList.remove("hidden");
+    renderModeStatus();
+    loadLesson(0);
+  });
+});
+
+engineModeToggleButton.addEventListener("click", () => {
+  if (isEngineMatchMode) {
+    returnToLessonMode();
+    return;
+  }
+  enterEngineMatchMode();
+});
 
 loadLesson(0);
