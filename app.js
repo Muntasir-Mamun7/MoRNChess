@@ -421,7 +421,7 @@ function renderLessonInstructions() {
       <div class="space-y-4">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">Limited Mode</p>
         <h3 class="text-lg font-semibold text-slate-100">Interactive board could not start</h3>
-        <p>The Chess.js and/or Chessboard.js libraries did not load in your browser/session.</p>
+        <p>Some interactive chess features did not load in your browser/session.</p>
         <p class="text-sm text-slate-300">Reload the page or try a different network/browser to enable full lessons and AI play.</p>
         ${
           feedbackMessage
@@ -550,7 +550,7 @@ function advanceLesson() {
 
 function enterEngineMatchMode() {
   if (!hasFullChessRuntime()) {
-    showRuntimeError("Play mode is unavailable because the board engine did not load.");
+    showRuntimeError("Play mode is unavailable because interactive chess features did not load.");
     return;
   }
 
@@ -605,7 +605,7 @@ function addReviewEntry(text) {
 function requestPositionReview() {
   if (!hasFullChessRuntime()) {
     analysisOutputElement.textContent =
-      "AI review is unavailable because the chess engine did not load.";
+      "AI reviews are unavailable until interactive chess features load successfully.";
     return;
   }
 
@@ -722,9 +722,9 @@ onboardingCardElements.forEach((cardElement) => {
     returnToLessonMode();
 
     if (!hasFullChessRuntime()) {
-      showRuntimeError("Some core chess libraries did not load, so the interactive board is limited right now.");
+      showRuntimeError("Some interactive chess features did not load, so the interactive board is limited right now.");
       analysisOutputElement.textContent =
-        "AI reviews are unavailable until the chess libraries load successfully.";
+        "AI reviews are unavailable until interactive chess features load successfully.";
       return;
     }
 
