@@ -48,4 +48,4 @@ You can deploy this repository to GitHub Pages in a few steps:
 ## Notes
 
 - Tailwind CSS is loaded from the official CDN in `index.html`.
-- The chessboard and AI tutor sections are placeholders for upcoming interactive features.
+- The chessboard uses `chessboard.js` and `chess.js` from CDNs for the first interactive beginner lessons.
