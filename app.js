@@ -21,6 +21,7 @@ const MIN_ELO = 200;
 const MAX_ELO = 1000;
 const ELO_RANGE = MAX_ELO - MIN_ELO;
 const MAX_SKILL_LEVEL = 10;
+const ENGINE_SEARCH_DEPTH = 5;
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
@@ -207,6 +208,11 @@ function advanceLesson() {
 }
 
 function enterEngineMatchMode() {
+  if (!Number.isFinite(userSelectedElo)) {
+    userSelectedElo = MIN_ELO;
+    setEngineDifficulty(userSelectedElo);
+  }
+
   isEngineMatchMode = true;
   isEngineThinking = false;
   feedbackMessage = "Engine match enabled. Your move as White.";
@@ -253,10 +259,10 @@ function handleMove(source, target) {
     }
 
     isEngineThinking = true;
-    feedbackMessage = `You played ${move.from}${move.to}. Engine is thinking...`;
+    feedbackMessage = `You played ${move.san}. Engine is thinking...`;
     renderLessonInstructions();
     stockfish.postMessage(`position fen ${game.fen()}`);
-    stockfish.postMessage("go depth 5");
+    stockfish.postMessage(`go depth ${ENGINE_SEARCH_DEPTH}`);
     return;
   }
 
