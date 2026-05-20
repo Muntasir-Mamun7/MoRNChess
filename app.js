@@ -17,6 +17,11 @@ const lessons = [
   },
 ];
 
+const MIN_ELO = 200;
+const MAX_ELO = 1000;
+const ELO_RANGE = MAX_ELO - MIN_ELO;
+const MAX_SKILL_LEVEL = 10;
+
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
 const onboardingModalElement = document.getElementById("onboarding-modal");
@@ -83,9 +88,9 @@ stockfish.onmessage = function (event) {
 };
 
 function setEngineDifficulty(elo) {
-  const normalizedElo = Number.isFinite(elo) ? elo : 200;
-  const clampedElo = Math.min(1000, Math.max(200, normalizedElo));
-  const skillLevel = Math.round(((clampedElo - 200) / 800) * 10);
+  const normalizedElo = Number.isFinite(elo) ? elo : MIN_ELO;
+  const clampedElo = Math.min(MAX_ELO, Math.max(MIN_ELO, normalizedElo));
+  const skillLevel = Math.round(((clampedElo - MIN_ELO) / ELO_RANGE) * MAX_SKILL_LEVEL);
   stockfish.postMessage(`setoption name Skill Level value ${skillLevel}`);
 }
 
@@ -104,7 +109,7 @@ function renderLessonInstructions() {
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Engine Match</p>
         <h3 class="text-lg font-semibold text-slate-100">Play vs. AI Mode</h3>
         <p>Make a legal move as White. The engine replies automatically at low depth for fast practice.</p>
-        <p class="text-sm text-slate-400">Selected level: ${userSelectedElo || 200} ELO</p>
+        <p class="text-sm text-slate-400">Selected level: ${userSelectedElo || MIN_ELO} ELO</p>
         ${
           feedbackMessage
             ? `<p class="text-sm font-medium text-emerald-300">${feedbackMessage}</p>`
@@ -309,5 +314,3 @@ engineModeToggleButton.addEventListener("click", () => {
   }
   enterEngineMatchMode();
 });
-
-loadLesson(0);
