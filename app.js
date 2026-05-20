@@ -172,6 +172,25 @@ function ensureBoardReady() {
   });
 }
 
+
+function resizeBoardWhenVisible() {
+  if (!board) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    if (board) {
+      board.resize();
+    }
+
+    window.setTimeout(() => {
+      if (board) {
+        board.resize();
+      }
+    }, 120);
+  });
+}
+
 function initStockfish(elo) {
   const eloOrDefault = Number.isFinite(elo) ? elo : MIN_ELO;
   const clampedElo = Math.min(MAX_ELO, Math.max(MIN_ELO, eloOrDefault));
@@ -427,6 +446,7 @@ function handleDragStart(source, piece) {
 
 function loadLesson(index) {
   ensureBoardReady();
+  resizeBoardWhenVisible();
   activeLessonIndex = index;
   feedbackMessage = "";
 
@@ -600,7 +620,7 @@ onboardingCardElements.forEach((cardElement) => {
     onboardingModalElement.classList.add("hidden");
     interactiveDashboardElement.classList.remove("hidden");
     ensureBoardReady();
-    window.requestAnimationFrame(() => board.resize());
+    resizeBoardWhenVisible();
 
     try {
       initStockfish(selectedElo);
@@ -644,6 +664,12 @@ restartGameButton.addEventListener("click", () => {
 
 analyzeMoveButton.addEventListener("click", () => {
   requestPositionReview();
+});
+
+window.addEventListener("resize", () => {
+  if (board) {
+    board.resize();
+  }
 });
 
 renderModeStatus();
