@@ -353,12 +353,13 @@ onboardingCardElements.forEach((cardElement) => {
     try {
       initStockfish(selectedElo);
     } catch (error) {
-      console.error(`Stockfish failed to initialize for ${eloLabel} Elo.`, error);
+      console.error(`Stockfish failed to initialize for ${eloLabel} ELO.`, error);
       stockfish = null;
     }
     enterEngineMatchMode();
     if (!stockfish) {
-      feedbackMessage = "Engine could not start. You can still practice in lesson mode.";
+      feedbackMessage =
+        "Engine could not start (browser worker loading issue). You can still practice in lesson mode.";
       renderLessonInstructions();
     }
   });
