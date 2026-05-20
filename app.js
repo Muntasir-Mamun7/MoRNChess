@@ -21,6 +21,7 @@ const MIN_ELO = 200;
 const MAX_ELO = 1000;
 const MAX_SKILL_LEVEL = 10;
 const ENGINE_SEARCH_DEPTH = 5;
+const BLACK_TURN = "b";
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
@@ -249,7 +250,7 @@ function returnToLessonMode() {
 }
 
 function requestEngineMove() {
-  if (!stockfish || currentMode !== "play" || game.turn() !== "b") {
+  if (!stockfish || currentMode !== "play" || game.turn() !== BLACK_TURN) {
     return;
   }
   isEngineThinking = true;
@@ -346,7 +347,8 @@ restartGameButton.addEventListener("click", () => {
     enterEngineMatchMode();
     return;
   }
-  loadLesson(activeLessonIndex >= lessons.length ? 0 : activeLessonIndex);
+  const lessonIndexToLoad = activeLessonIndex < lessons.length ? activeLessonIndex : 0;
+  loadLesson(lessonIndexToLoad);
 });
 
 analyzeMoveButton.addEventListener("click", () => {
