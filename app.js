@@ -22,6 +22,7 @@ const MAX_ELO = 1000;
 const MAX_SKILL_LEVEL = 10;
 const ENGINE_SEARCH_DEPTH = 5;
 const BLACK_TURN = "b";
+const ELO_PER_SKILL_LEVEL = 80;
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
@@ -66,7 +67,10 @@ const board = Chessboard("chess-board", {
 function initStockfish(elo) {
   const eloOrDefault = Number.isFinite(elo) ? elo : MIN_ELO;
   const clampedElo = Math.min(MAX_ELO, Math.max(MIN_ELO, eloOrDefault));
-  const skillLevel = Math.max(0, Math.min(MAX_SKILL_LEVEL, Math.floor((clampedElo - 200) / 80)));
+  const skillLevel = Math.max(
+    0,
+    Math.min(MAX_SKILL_LEVEL, Math.floor((clampedElo - MIN_ELO) / ELO_PER_SKILL_LEVEL))
+  );
 
   if (stockfish) {
     stockfish.terminate();
