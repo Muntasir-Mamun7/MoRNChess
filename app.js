@@ -113,6 +113,9 @@ const REVIEW_SEARCH_DEPTH = 10;
 const BLACK_TURN = "b";
 const ELO_PER_SKILL_LEVEL = 80;
 const REVIEW_HISTORY_LIMIT = 200;
+const BOARD_RESIZE_DEBOUNCE_MS = 60;
+// Extra delayed resize covers late layout stabilization after hidden->visible toggles.
+const BOARD_RESIZE_DELAY_MS = 120;
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
@@ -156,6 +159,8 @@ let isEngineThinking = false;
 let stockfish = null;
 let reviewStockfish = null;
 let board = null;
+let boardResizeObserver = null;
+let boardResizeTimeoutId = null;
 let reviewRequest = null;
 const reviewHistory = [];
 
@@ -169,6 +174,42 @@ function ensureBoardReady() {
     position: "start",
     onDragStart: handleDragStart,
     onDrop: handleMove,
+  });
+
+  if (!boardResizeObserver && typeof ResizeObserver !== "undefined") {
+    boardResizeObserver = new ResizeObserver(() => {
+      try {
+        scheduleBoardResizeDebounced();
+      } catch (error) {
+        console.error("Board resize observer failed.", error);
+      }
+    });
+    boardResizeObserver.observe(boardElement);
+  }
+}
+
+
+function scheduleBoardResizeDebounced() {
+  if (!board) {
+    return;
+  }
+
+  window.clearTimeout(boardResizeTimeoutId);
+  boardResizeTimeoutId = window.setTimeout(() => {
+    board?.resize();
+  }, BOARD_RESIZE_DEBOUNCE_MS);
+}
+
+function resizeBoardWhenVisible() {
+  if (!board) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    board?.resize();
+    window.setTimeout(() => {
+      board?.resize();
+    }, BOARD_RESIZE_DELAY_MS);
   });
 }
 
@@ -427,6 +468,7 @@ function handleDragStart(source, piece) {
 
 function loadLesson(index) {
   ensureBoardReady();
+  resizeBoardWhenVisible();
   activeLessonIndex = index;
   feedbackMessage = "";
 
@@ -600,7 +642,7 @@ onboardingCardElements.forEach((cardElement) => {
     onboardingModalElement.classList.add("hidden");
     interactiveDashboardElement.classList.remove("hidden");
     ensureBoardReady();
-    window.requestAnimationFrame(() => board.resize());
+    resizeBoardWhenVisible();
 
     try {
       initStockfish(selectedElo);
