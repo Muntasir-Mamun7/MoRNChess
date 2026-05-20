@@ -353,7 +353,7 @@ onboardingCardElements.forEach((cardElement) => {
     try {
       initStockfish(selectedElo);
     } catch (error) {
-      console.error(`Stockfish failed to initialize for ${eloLabel} ELO.`, error);
+      console.error(`Stockfish failed to initialize for ${eloLabel} Elo.`, error);
       stockfish = null;
     }
     enterEngineMatchMode();
