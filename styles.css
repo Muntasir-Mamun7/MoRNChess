@@ -1,0 +1,7 @@
+body {
+  font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.chessboard-placeholder {
+  min-height: 18rem;
+}

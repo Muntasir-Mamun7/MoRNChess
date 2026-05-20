@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoRNChess - Learn Chess for Free</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="bg-slate-950 text-slate-100 min-h-screen">
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
+      <nav class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between">
+          <a href="#" class="text-xl font-bold tracking-tight text-emerald-400">
+            MoRNChess
+          </a>
+          <ul class="flex items-center gap-4 text-sm sm:gap-6 sm:text-base">
+            <li><a class="hover:text-emerald-300 transition-colors" href="#">Lessons</a></li>
+            <li><a class="hover:text-emerald-300 transition-colors" href="#">Play</a></li>
+            <li><a class="hover:text-emerald-300 transition-colors" href="#">About</a></li>
+          </ul>
+        </div>
+      </nav>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <section class="mb-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8">
+        <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">
+          MoRNChess - Learn Chess for Free
+        </h1>
+        <p class="mt-3 max-w-3xl text-slate-300">
+          A beginner-friendly, interactive platform to help you learn chess step by step.
+          Start with core concepts, practice in real time, and improve with guided support.
+        </p>
+      </section>
+
+      <section class="grid gap-6 lg:grid-cols-3">
+        <div class="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <h2 class="mb-4 text-xl font-semibold text-emerald-300">Chessboard Area</h2>
+          <div
+            class="chessboard-placeholder flex h-[22rem] items-center justify-center rounded-xl border border-dashed border-emerald-400/50 bg-slate-950/60 text-center text-slate-300"
+          >
+            Chessboard will render here soon.
+          </div>
+        </div>
+
+        <aside class="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <h2 class="mb-4 text-xl font-semibold text-emerald-300">AI Tutor Instructions</h2>
+          <div class="rounded-xl border border-dashed border-slate-700 bg-slate-950/50 p-4 text-slate-300">
+            Personalized AI tutor guidance will appear here.
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
