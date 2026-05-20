@@ -56,7 +56,7 @@ function renderLessonInstructions() {
         <div class="rounded-lg border border-emerald-400/40 bg-emerald-400/10 p-3 text-slate-100">
           ${activeLesson.objective}
         </div>
-        <p class="text-sm text-slate-400">Drag the highlighted piece pattern from the lesson position to practice the move.</p>
+        <p class="text-sm text-slate-400">Drag the piece from the lesson position to practice the move.</p>
         ${
           feedbackMessage
             ? `<p class="text-sm font-medium text-amber-300">${feedbackMessage}</p>`
@@ -97,17 +97,18 @@ function loadLesson(index) {
 }
 
 function advanceLesson() {
+  const completedLesson = lessons[activeLessonIndex];
   const nextLessonIndex = activeLessonIndex + 1;
 
   if (nextLessonIndex < lessons.length) {
-    feedbackMessage = `${getActiveLesson().successMessage} Loading the next lesson...`;
+    feedbackMessage = `${completedLesson.successMessage} Loading the next lesson...`;
     renderLessonInstructions();
     window.setTimeout(() => loadLesson(nextLessonIndex), 1200);
     return;
   }
 
   activeLessonIndex = lessons.length;
-  feedbackMessage = `${lessons[lessons.length - 1].successMessage} You've finished the beginner practice set.`;
+  feedbackMessage = `${completedLesson.successMessage} You've finished the beginner practice set.`;
   renderLessonInstructions();
 }
 
