@@ -573,7 +573,7 @@ function returnToLessonMode() {
 }
 
 function requestEngineMove() {
-  if (!hasChessRuntime || !game) {
+  if (!hasFullChessRuntime()) {
     showRuntimeError("Engine match is unavailable right now.");
     return;
   }
@@ -603,7 +603,7 @@ function addReviewEntry(text) {
 }
 
 function requestPositionReview() {
-  if (!hasChessRuntime || !game) {
+  if (!hasFullChessRuntime()) {
     analysisOutputElement.textContent =
       "AI review is unavailable because the chess engine did not load.";
     return;
