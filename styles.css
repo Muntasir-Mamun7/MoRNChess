@@ -32,6 +32,7 @@ body {
 
 .fallback-square {
   border: 0;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,4 +55,39 @@ body {
 .fallback-selected {
   outline: 3px solid #34d399;
   outline-offset: -3px;
+}
+
+.fallback-piece {
+  pointer-events: none;
+}
+
+.fallback-file-label,
+.fallback-rank-label {
+  pointer-events: none;
+  position: absolute;
+  font-size: clamp(0.55rem, 1.3vw, 0.75rem);
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.fallback-file-label {
+  right: 4px;
+  bottom: 3px;
+  text-transform: lowercase;
+}
+
+.fallback-rank-label {
+  left: 4px;
+  top: 3px;
+}
+
+.fallback-light .fallback-file-label,
+.fallback-light .fallback-rank-label {
+  color: #7c4f2c;
+}
+
+.fallback-dark .fallback-file-label,
+.fallback-dark .fallback-rank-label {
+  color: #f4e6cf;
 }
