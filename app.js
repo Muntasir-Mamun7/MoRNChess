@@ -344,6 +344,10 @@ function getSafeLessonIndex() {
   return activeLessonIndex < lessons.length ? activeLessonIndex : 0;
 }
 
+function getTurnPlayerName() {
+  return game.turn() === "w" ? "White" : "Black";
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -528,6 +532,10 @@ function handleDragStart(source, piece) {
 
   if (currentMode === "play-ai") {
     return piece.startsWith("w") && game.turn() === "w";
+  }
+
+  if (currentMode === "play-local") {
+    return piece.startsWith(game.turn());
   }
 
   return true;
@@ -727,8 +735,7 @@ function handleMove(source, target) {
       return;
     }
 
-    const nextTurn = game.turn() === "w" ? "White" : "Black";
-    feedbackMessage = `Move played: ${move.san}. ${nextTurn} to move.`;
+    feedbackMessage = `Move played: ${move.san}. ${getTurnPlayerName()} to move.`;
     renderLessonInstructions();
     return;
   }
