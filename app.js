@@ -116,6 +116,8 @@ const REVIEW_HISTORY_LIMIT = 200;
 const BOARD_RESIZE_DEBOUNCE_MS = 60;
 // Extra delayed resize covers late layout stabilization after hidden->visible toggles.
 const BOARD_RESIZE_DELAY_MS = 120;
+const ENGINE_FALLBACK_DELAY_MS = 450;
+const DEFAULT_PROMOTION_PIECE = "q";
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
@@ -265,7 +267,7 @@ function initStockfish(elo) {
     const engineMove = game.move({
       from: bestMoveToken.slice(0, 2),
       to: bestMoveToken.slice(2, 4),
-      promotion: bestMoveToken.length > 4 ? bestMoveToken.slice(4, 5) : "q",
+      promotion: bestMoveToken.length > 4 ? bestMoveToken.slice(4, 5) : DEFAULT_PROMOTION_PIECE,
     });
 
     if (engineMove) {
@@ -276,6 +278,92 @@ function initStockfish(elo) {
 
     isEngineThinking = false;
   };
+
+  stockfish.onerror = function () {
+    stockfish = null;
+    isEngineThinking = false;
+    if (currentMode === "play-ai") {
+      feedbackMessage = "Engine worker is unavailable. Continuing with built-in AI.";
+      renderLessonInstructions();
+    }
+  };
+}
+
+function getFallbackEngineMove() {
+  if (!hasFullChessRuntime()) {
+    return null;
+  }
+
+  const legalMoves = game.moves({ verbose: true });
+  if (!legalMoves.length) {
+    return null;
+  }
+
+  const pieceValues = {
+    p: 1,
+    n: 3,
+    b: 3,
+    r: 5,
+    q: 9,
+    k: 0,
+  };
+
+  let bestScore = Number.NEGATIVE_INFINITY;
+  let bestMoves = [];
+
+  legalMoves.forEach((move) => {
+    let score = 0;
+
+    if (move.captured) {
+      score += pieceValues[move.captured] ?? 0;
+    }
+    if (move.flags.includes("p")) {
+      score += (pieceValues[move.promotion] ?? pieceValues.q) - pieceValues.p;
+    }
+    if (move.san.includes("+")) {
+      score += 0.5;
+    }
+    if (move.san.includes("#")) {
+      score += 100;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves = [move];
+    } else if (score === bestScore) {
+      bestMoves.push(move);
+    }
+  });
+
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}
+
+function playFallbackEngineMove() {
+  const fallbackMove = getFallbackEngineMove();
+  if (!fallbackMove) {
+    feedbackMessage = "No legal engine move is available.";
+    renderLessonInstructions();
+    isEngineThinking = false;
+    return;
+  }
+
+  const playedMove = game.move({
+    from: fallbackMove.from,
+    to: fallbackMove.to,
+    promotion: fallbackMove.promotion || DEFAULT_PROMOTION_PIECE,
+  });
+
+  if (!playedMove) {
+    feedbackMessage = "Built-in AI could not make a legal move.";
+    renderLessonInstructions();
+    isEngineThinking = false;
+    return;
+  }
+
+  board.position(game.fen());
+  feedbackMessage = `AI played ${playedMove.san}. Your turn.`;
+  renderLessonInstructions();
+  isEngineThinking = false;
 }
 
 function formatScoreLabel(scoreType, scoreValue) {
@@ -590,9 +678,19 @@ function enterAiMatchMode() {
   }
 
   ensureBoardReady();
+  resizeBoardWhenVisible();
+  if (!stockfish) {
+    try {
+      initStockfish(selectedElo);
+    } catch (error) {
+      stockfish = null;
+    }
+  }
   currentMode = "play-ai";
   isEngineThinking = false;
-  feedbackMessage = "Engine match enabled. Your move as White.";
+  feedbackMessage = stockfish
+    ? "Engine match enabled. Your move as White."
+    : "Engine match enabled with built-in AI. Your move as White.";
   game.reset();
   board.position("start");
   renderModeStatus();
@@ -606,6 +704,7 @@ function enterLocalMatchMode() {
   }
 
   ensureBoardReady();
+  resizeBoardWhenVisible();
   currentMode = "play-local";
   isEngineThinking = false;
   feedbackMessage = "In-person match enabled. White moves first.";
@@ -633,8 +732,16 @@ function requestEngineMove() {
     return;
   }
   if (!stockfish) {
-    feedbackMessage = "Engine is not ready yet. Please restart from onboarding.";
+    feedbackMessage = "Built-in AI is thinking...";
     renderLessonInstructions();
+    isEngineThinking = true;
+    window.setTimeout(() => {
+      if (currentMode !== "play-ai" || game.turn() !== BLACK_TURN) {
+        isEngineThinking = false;
+        return;
+      }
+      playFallbackEngineMove();
+    }, ENGINE_FALLBACK_DELAY_MS);
     return;
   }
   isEngineThinking = true;
@@ -695,7 +802,7 @@ function handleMove(source, target) {
     const move = game.move({
       from: source,
       to: target,
-      promotion: "q",
+      promotion: DEFAULT_PROMOTION_PIECE,
     });
 
     if (!move) {
@@ -720,7 +827,7 @@ function handleMove(source, target) {
     const move = game.move({
       from: source,
       to: target,
-      promotion: "q",
+      promotion: DEFAULT_PROMOTION_PIECE,
     });
 
     if (!move) {
@@ -749,7 +856,7 @@ function handleMove(source, target) {
   const move = game.move({
     from: source,
     to: target,
-    promotion: "q",
+    promotion: DEFAULT_PROMOTION_PIECE,
   });
 
   if (!move) {
