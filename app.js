@@ -499,6 +499,13 @@ function createFallbackChessGame() {
     };
   }
 
+  function move(input, to, promotion) {
+    if (typeof input === "object" && input !== null) {
+      return applyMove(input.from, input.to, input.promotion);
+    }
+    return applyMove(input, to, promotion);
+  }
+
   function generateMoves() {
     const legalMoves = [];
     for (let y = 0; y < 8; y += 1) {
@@ -596,7 +603,7 @@ function createFallbackChessGame() {
     load,
     fen,
     turn,
-    move: applyMove,
+    move,
     undo,
     moves,
     game_over,
@@ -1164,7 +1171,7 @@ function renderLessonInstructions() {
         <div class="rounded-lg border border-emerald-400/40 bg-emerald-400/10 p-3 text-slate-100">
           ${activeLesson.objective}
         </div>
-        <p class="text-sm text-slate-400">Drag the piece from the lesson position to complete this step.</p>
+        <p class="text-sm text-slate-400">Move the piece from the lesson position to complete this step.</p>
         ${
           feedbackMessage
             ? `<p class="text-sm font-medium text-amber-300">${escapeHtml(feedbackMessage)}</p>`
