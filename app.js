@@ -117,6 +117,7 @@ const BOARD_RESIZE_DEBOUNCE_MS = 60;
 // Extra delayed resize covers late layout stabilization after hidden->visible toggles.
 const BOARD_RESIZE_DELAY_MS = 120;
 const ENGINE_FALLBACK_DELAY_MS = 450;
+const DEFAULT_PROMOTION_PIECE = "q";
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
@@ -266,7 +267,7 @@ function initStockfish(elo) {
     const engineMove = game.move({
       from: bestMoveToken.slice(0, 2),
       to: bestMoveToken.slice(2, 4),
-      promotion: bestMoveToken.length > 4 ? bestMoveToken.slice(4, 5) : "q",
+      promotion: bestMoveToken.length > 4 ? bestMoveToken.slice(4, 5) : DEFAULT_PROMOTION_PIECE,
     });
 
     if (engineMove) {
@@ -317,7 +318,7 @@ function getFallbackEngineMove() {
       score += pieceValues[move.captured] ?? 0;
     }
     if (move.flags.includes("p")) {
-      score += pieceValues[move.promotion] ?? 0;
+      score += (pieceValues[move.promotion] ?? pieceValues[DEFAULT_PROMOTION_PIECE]) - pieceValues.p;
     }
     if (move.san.includes("+")) {
       score += 0.5;
@@ -349,7 +350,7 @@ function playFallbackEngineMove() {
   const playedMove = game.move({
     from: fallbackMove.from,
     to: fallbackMove.to,
-    promotion: fallbackMove.promotion || "q",
+    promotion: fallbackMove.promotion || DEFAULT_PROMOTION_PIECE,
   });
 
   if (!playedMove) {
@@ -801,7 +802,7 @@ function handleMove(source, target) {
     const move = game.move({
       from: source,
       to: target,
-      promotion: "q",
+      promotion: DEFAULT_PROMOTION_PIECE,
     });
 
     if (!move) {
@@ -826,7 +827,7 @@ function handleMove(source, target) {
     const move = game.move({
       from: source,
       to: target,
-      promotion: "q",
+      promotion: DEFAULT_PROMOTION_PIECE,
     });
 
     if (!move) {
@@ -855,7 +856,7 @@ function handleMove(source, target) {
   const move = game.move({
     from: source,
     to: target,
-    promotion: "q",
+    promotion: DEFAULT_PROMOTION_PIECE,
   });
 
   if (!move) {
