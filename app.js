@@ -1209,7 +1209,7 @@ function handleDragStart(source, piece) {
     return piece.startsWith(game.turn());
   }
 
-  return true;
+  return piece.startsWith(game.turn());
 }
 
 function loadLesson(index) {
@@ -1484,7 +1484,7 @@ onboardingCardElements.forEach((cardElement) => {
       reviewStockfish = null;
     }
 
-    returnToLessonMode();
+    enterLocalMatchMode();
 
     if (!hasFullChessRuntime()) {
       showRuntimeError("Some interactive chess features did not load. The interactive board is limited right now—please reload to try again.");
