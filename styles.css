@@ -2,6 +2,21 @@ body {
   font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+#chess-board {
+  width: min(100%, 560px);
+  margin-inline: auto;
+}
+
+#chess-board .board-b72b1 {
+  width: 100% !important;
+  max-width: 100%;
+  touch-action: manipulation;
+}
+
+#chess-board .square-55d63 {
+  box-sizing: border-box;
+}
+
 .chessboard-placeholder {
   min-height: 18rem;
 }
@@ -23,7 +38,7 @@ body {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   width: 100%;
-  max-width: 450px;
+  max-width: 560px;
   aspect-ratio: 1 / 1;
   border: 1px solid rgb(51 65 85);
   border-radius: 0.5rem;
@@ -40,6 +55,9 @@ body {
   line-height: 1;
   cursor: pointer;
   user-select: none;
+  padding: 0;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
 }
 
 .fallback-light {
