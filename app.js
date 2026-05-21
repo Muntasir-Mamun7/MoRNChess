@@ -329,15 +329,12 @@ function getFallbackEngineMove() {
     if (score > bestScore) {
       bestScore = score;
       bestMoves = [move];
-      return;
-    }
-
-    if (score === bestScore) {
+    } else if (score === bestScore) {
       bestMoves.push(move);
     }
   });
 
-  return bestMoves[Math.floor(Math.random() * bestMoves.length)] ?? legalMoves[0];
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
 }
 
 function playFallbackEngineMove() {
