@@ -1205,10 +1205,6 @@ function handleDragStart(source, piece) {
     return piece.startsWith("w") && game.turn() === "w";
   }
 
-  if (currentMode === "play-local") {
-    return piece.startsWith(game.turn());
-  }
-
   return piece.startsWith(game.turn());
 }
 
