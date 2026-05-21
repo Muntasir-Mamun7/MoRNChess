@@ -122,7 +122,8 @@ const instructionsElement = document.getElementById("lesson-instructions");
 const onboardingModalElement = document.getElementById("onboarding-modal");
 const onboardingCardElements = document.querySelectorAll(".onboarding-level-card");
 const interactiveDashboardElement = document.getElementById("interactive-dashboard");
-const engineModeToggleButton = document.getElementById("engine-mode-toggle");
+const aiModeToggleButton = document.getElementById("ai-mode-toggle");
+const localModeToggleButton = document.getElementById("local-mode-toggle");
 const modeStatusElement = document.getElementById("mode-status");
 const restartGameButton = document.getElementById("restart-game-button");
 const analyzeMoveButton = document.getElementById("analyze-move-button");
@@ -138,7 +139,8 @@ if (
   !instructionsElement ||
   !onboardingModalElement ||
   !interactiveDashboardElement ||
-  !engineModeToggleButton ||
+  !aiModeToggleButton ||
+  !localModeToggleButton ||
   !modeStatusElement ||
   !restartGameButton ||
   !analyzeMoveButton ||
@@ -255,7 +257,7 @@ function initStockfish(elo) {
 
     const messageTokens = message.trim().split(/\s+/);
     const bestMoveToken = messageTokens.length > 1 ? messageTokens[1] : null;
-    if (!bestMoveToken || bestMoveToken.length < 4 || bestMoveToken === "(none)" || currentMode !== "play") {
+    if (!bestMoveToken || bestMoveToken.length < 4 || bestMoveToken === "(none)" || currentMode !== "play-ai") {
       isEngineThinking = false;
       return;
     }
@@ -342,6 +344,10 @@ function getSafeLessonIndex() {
   return activeLessonIndex < lessons.length ? activeLessonIndex : 0;
 }
 
+function getTurnPlayerName() {
+  return game.turn() === "w" ? "White" : "Black";
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -411,8 +417,17 @@ function renderGuideContent() {
 }
 
 function renderModeStatus() {
-  modeStatusElement.textContent = currentMode === "play" ? "Mode: Play vs. AI" : "Mode: Lesson";
-  engineModeToggleButton.textContent = currentMode === "play" ? "Switch to Lesson Mode" : "Switch to Play Mode";
+  if (currentMode === "play-ai") {
+    modeStatusElement.textContent = "Mode: Play vs. AI";
+  } else if (currentMode === "play-local") {
+    modeStatusElement.textContent = "Mode: In-Person (2 Players)";
+  } else {
+    modeStatusElement.textContent = "Mode: Lesson";
+  }
+
+  aiModeToggleButton.textContent = currentMode === "play-ai" ? "Switch to Lesson Mode" : "Play vs AI";
+  localModeToggleButton.textContent =
+    currentMode === "play-local" ? "Switch to Lesson Mode" : "Play In Person";
 }
 
 function renderLessonInstructions() {
@@ -435,7 +450,7 @@ function renderLessonInstructions() {
     return;
   }
 
-  if (currentMode === "play") {
+  if (currentMode === "play-ai") {
     instructionsElement.innerHTML = `
       <div class="space-y-4">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">Engine Match</p>
@@ -445,6 +460,22 @@ function renderLessonInstructions() {
         ${
           feedbackMessage
             ? `<p class="text-sm font-medium text-emerald-300">${escapeHtml(feedbackMessage)}</p>`
+            : ""
+        }
+      </div>
+    `;
+    return;
+  }
+
+  if (currentMode === "play-local") {
+    instructionsElement.innerHTML = `
+      <div class="space-y-4">
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-sky-300">In-Person Match</p>
+        <h3 class="text-lg font-semibold text-slate-100">Play on one board with a friend</h3>
+        <p>Both White and Black can move pieces. No engine replies in this mode.</p>
+        ${
+          feedbackMessage
+            ? `<p class="text-sm font-medium text-sky-300">${escapeHtml(feedbackMessage)}</p>`
             : ""
         }
       </div>
@@ -499,8 +530,12 @@ function handleDragStart(source, piece) {
     return false;
   }
 
-  if (currentMode === "play") {
+  if (currentMode === "play-ai") {
     return piece.startsWith("w") && game.turn() === "w";
+  }
+
+  if (currentMode === "play-local") {
+    return piece.startsWith(game.turn());
   }
 
   return true;
@@ -548,16 +583,32 @@ function advanceLesson() {
   renderLessonInstructions();
 }
 
-function enterEngineMatchMode() {
+function enterAiMatchMode() {
   if (!hasFullChessRuntime()) {
     showRuntimeError("Play mode is unavailable because interactive chess features did not load.");
     return;
   }
 
   ensureBoardReady();
-  currentMode = "play";
+  currentMode = "play-ai";
   isEngineThinking = false;
   feedbackMessage = "Engine match enabled. Your move as White.";
+  game.reset();
+  board.position("start");
+  renderModeStatus();
+  renderLessonInstructions();
+}
+
+function enterLocalMatchMode() {
+  if (!hasFullChessRuntime()) {
+    showRuntimeError("In-person mode is unavailable because interactive chess features did not load.");
+    return;
+  }
+
+  ensureBoardReady();
+  currentMode = "play-local";
+  isEngineThinking = false;
+  feedbackMessage = "In-person match enabled. White moves first.";
   game.reset();
   board.position("start");
   renderModeStatus();
@@ -578,7 +629,7 @@ function requestEngineMove() {
     return;
   }
 
-  if (currentMode !== "play" || game.turn() !== BLACK_TURN) {
+  if (currentMode !== "play-ai" || game.turn() !== BLACK_TURN) {
     return;
   }
   if (!stockfish) {
@@ -640,7 +691,7 @@ function handleMove(source, target) {
     return "snapback";
   }
 
-  if (currentMode === "play") {
+  if (currentMode === "play-ai") {
     const move = game.move({
       from: source,
       to: target,
@@ -662,6 +713,30 @@ function handleMove(source, target) {
     feedbackMessage = `You played ${move.san}. Engine is thinking...`;
     renderLessonInstructions();
     requestEngineMove();
+    return;
+  }
+
+  if (currentMode === "play-local") {
+    const move = game.move({
+      from: source,
+      to: target,
+      promotion: "q",
+    });
+
+    if (!move) {
+      return "snapback";
+    }
+
+    board.position(game.fen());
+
+    if (game.game_over()) {
+      feedbackMessage = "Game over. Restart to play another in-person game.";
+      renderLessonInstructions();
+      return;
+    }
+
+    feedbackMessage = `Move played: ${move.san}. ${getTurnPlayerName()} to move.`;
+    renderLessonInstructions();
     return;
   }
 
@@ -741,17 +816,30 @@ onboardingCardElements.forEach((cardElement) => {
   });
 });
 
-engineModeToggleButton.addEventListener("click", () => {
-  if (currentMode === "play") {
+aiModeToggleButton.addEventListener("click", () => {
+  if (currentMode === "play-ai") {
     returnToLessonMode();
     return;
   }
-  enterEngineMatchMode();
+  enterAiMatchMode();
+});
+
+localModeToggleButton.addEventListener("click", () => {
+  if (currentMode === "play-local") {
+    returnToLessonMode();
+    return;
+  }
+  enterLocalMatchMode();
 });
 
 restartGameButton.addEventListener("click", () => {
-  if (currentMode === "play") {
-    enterEngineMatchMode();
+  if (currentMode === "play-ai") {
+    enterAiMatchMode();
+    return;
+  }
+
+  if (currentMode === "play-local") {
+    enterLocalMatchMode();
     return;
   }
   loadLesson(getSafeLessonIndex());
