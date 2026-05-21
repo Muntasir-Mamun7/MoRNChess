@@ -133,6 +133,8 @@ const lessonListElement = document.getElementById("lesson-list");
 const guideContentElement = document.getElementById("guide-content");
 const analysisOutputElement = document.getElementById("analysis-output");
 const reviewHistoryElement = document.getElementById("review-history");
+const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const FILE_NAMES = "abcdefgh";
 const hasChessRuntime = typeof Chess !== "undefined";
 const hasChessboardRuntime = typeof Chessboard !== "undefined";
 
@@ -154,7 +156,559 @@ if (
   throw new Error("MoRNChess could not load the chess lesson board.");
 }
 
-const game = hasChessRuntime ? new Chess() : null;
+function getSquareName(fileIndex, rankIndex) {
+  return `${FILE_NAMES[fileIndex]}${8 - rankIndex}`;
+}
+
+function parseSquare(square) {
+  if (!square || square.length !== 2) {
+    return null;
+  }
+  const fileIndex = FILE_NAMES.indexOf(square[0]);
+  const rank = Number(square[1]);
+  if (fileIndex < 0 || !Number.isInteger(rank) || rank < 1 || rank > 8) {
+    return null;
+  }
+  return { x: fileIndex, y: 8 - rank };
+}
+
+function createFallbackChessGame() {
+  const pieceValues = new Set(["p", "n", "b", "r", "q", "k"]);
+  let boardState = [];
+  let turnColor = "w";
+  let castlingRights = "KQkq";
+  let halfmoveClock = 0;
+  let fullmoveNumber = 1;
+  let history = [];
+
+  function parseFenBoard(boardFen) {
+    const rows = boardFen.split("/");
+    if (rows.length !== 8) {
+      throw new Error("Invalid board FEN.");
+    }
+    return rows.map((row) => {
+      const parsedRow = [];
+      row.split("").forEach((char) => {
+        const emptyCount = Number(char);
+        if (Number.isInteger(emptyCount) && emptyCount > 0) {
+          for (let i = 0; i < emptyCount; i += 1) {
+            parsedRow.push(null);
+          }
+        } else {
+          parsedRow.push(char);
+        }
+      });
+      if (parsedRow.length !== 8) {
+        throw new Error("Invalid board FEN row.");
+      }
+      return parsedRow;
+    });
+  }
+
+  function serializeFenBoard() {
+    return boardState
+      .map((row) => {
+        let empty = 0;
+        let text = "";
+        row.forEach((piece) => {
+          if (!piece) {
+            empty += 1;
+            return;
+          }
+          if (empty > 0) {
+            text += String(empty);
+            empty = 0;
+          }
+          text += piece;
+        });
+        if (empty > 0) {
+          text += String(empty);
+        }
+        return text;
+      })
+      .join("/");
+  }
+
+  function isInBounds(x, y) {
+    return x >= 0 && x < 8 && y >= 0 && y < 8;
+  }
+
+  function getPieceAt(x, y) {
+    if (!isInBounds(x, y)) {
+      return null;
+    }
+    return boardState[y][x];
+  }
+
+  function getPieceColor(piece) {
+    if (!piece) {
+      return null;
+    }
+    return piece === piece.toUpperCase() ? "w" : "b";
+  }
+
+  function isPathClear(fromX, fromY, toX, toY) {
+    const xStep = Math.sign(toX - fromX);
+    const yStep = Math.sign(toY - fromY);
+    let x = fromX + xStep;
+    let y = fromY + yStep;
+    while (x !== toX || y !== toY) {
+      if (getPieceAt(x, y)) {
+        return false;
+      }
+      x += xStep;
+      y += yStep;
+    }
+    return true;
+  }
+
+  function removeCastlingRight(flag) {
+    castlingRights = castlingRights.replace(flag, "");
+    if (!castlingRights) {
+      castlingRights = "-";
+    }
+  }
+
+  function updateCastlingRightsOnMove(piece, fromX, fromY, toX, toY, capturedPiece) {
+    if (piece === "K") {
+      removeCastlingRight("K");
+      removeCastlingRight("Q");
+    } else if (piece === "k") {
+      removeCastlingRight("k");
+      removeCastlingRight("q");
+    } else if (piece === "R") {
+      if (fromX === 0 && fromY === 7) {
+        removeCastlingRight("Q");
+      } else if (fromX === 7 && fromY === 7) {
+        removeCastlingRight("K");
+      }
+    } else if (piece === "r") {
+      if (fromX === 0 && fromY === 0) {
+        removeCastlingRight("q");
+      } else if (fromX === 7 && fromY === 0) {
+        removeCastlingRight("k");
+      }
+    }
+
+    if (capturedPiece === "R") {
+      if (toX === 0 && toY === 7) {
+        removeCastlingRight("Q");
+      } else if (toX === 7 && toY === 7) {
+        removeCastlingRight("K");
+      }
+    } else if (capturedPiece === "r") {
+      if (toX === 0 && toY === 0) {
+        removeCastlingRight("q");
+      } else if (toX === 7 && toY === 0) {
+        removeCastlingRight("k");
+      }
+    }
+  }
+
+  function isPseudoLegalMove(piece, fromX, fromY, toX, toY, promotion, allowCastling = true) {
+    const targetPiece = getPieceAt(toX, toY);
+    const color = getPieceColor(piece);
+    const targetColor = getPieceColor(targetPiece);
+    if (color !== turnColor || targetColor === color) {
+      return { legal: false, flags: "" };
+    }
+
+    const pieceType = piece.toLowerCase();
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    let flags = targetPiece ? "c" : "";
+
+    if (pieceType === "p") {
+      const forward = color === "w" ? -1 : 1;
+      const startRank = color === "w" ? 6 : 1;
+      const promotionRank = color === "w" ? 0 : 7;
+      const isForwardMove = dx === 0 && dy === forward && !targetPiece;
+      const isDoubleMove =
+        dx === 0 &&
+        dy === 2 * forward &&
+        fromY === startRank &&
+        !targetPiece &&
+        !getPieceAt(fromX, fromY + forward);
+      const isCaptureMove = absDx === 1 && dy === forward && targetPiece && targetColor !== color;
+
+      if (!isForwardMove && !isDoubleMove && !isCaptureMove) {
+        return { legal: false, flags: "" };
+      }
+
+      if (toY === promotionRank) {
+        const nextPiece = (promotion || DEFAULT_PROMOTION_PIECE).toLowerCase();
+        if (!pieceValues.has(nextPiece) || nextPiece === "k") {
+          return { legal: false, flags: "" };
+        }
+        flags += "p";
+      }
+      return { legal: true, flags };
+    }
+
+    if (pieceType === "n") {
+      if (!((absDx === 1 && absDy === 2) || (absDx === 2 && absDy === 1))) {
+        return { legal: false, flags: "" };
+      }
+      return { legal: true, flags };
+    }
+
+    if (pieceType === "b") {
+      if (absDx !== absDy || !isPathClear(fromX, fromY, toX, toY)) {
+        return { legal: false, flags: "" };
+      }
+      return { legal: true, flags };
+    }
+
+    if (pieceType === "r") {
+      if ((dx !== 0 && dy !== 0) || !isPathClear(fromX, fromY, toX, toY)) {
+        return { legal: false, flags: "" };
+      }
+      return { legal: true, flags };
+    }
+
+    if (pieceType === "q") {
+      const isStraight = dx === 0 || dy === 0;
+      const isDiagonal = absDx === absDy;
+      if ((!isStraight && !isDiagonal) || !isPathClear(fromX, fromY, toX, toY)) {
+        return { legal: false, flags: "" };
+      }
+      return { legal: true, flags };
+    }
+
+    if (pieceType === "k") {
+      if (allowCastling && absDy === 0 && absDx === 2) {
+        const isWhite = color === "w";
+        const kingSide = dx === 2;
+        const rights = kingSide ? (isWhite ? "K" : "k") : isWhite ? "Q" : "q";
+        const y = isWhite ? 7 : 0;
+        const rookX = kingSide ? 7 : 0;
+        const throughSquares = kingSide ? [5, 6] : [1, 2, 3];
+        const rook = getPieceAt(rookX, y);
+        const expectedRook = isWhite ? "R" : "r";
+        const canCastle =
+          castlingRights.includes(rights) &&
+          fromX === 4 &&
+          fromY === y &&
+          toY === y &&
+          toX === (kingSide ? 6 : 2) &&
+          rook === expectedRook &&
+          throughSquares.every((x) => !getPieceAt(x, y));
+        if (!canCastle) {
+          return { legal: false, flags: "" };
+        }
+        return { legal: true, flags: flags + (kingSide ? "k" : "q") };
+      }
+      if (absDx <= 1 && absDy <= 1) {
+        return { legal: true, flags };
+      }
+    }
+
+    return { legal: false, flags: "" };
+  }
+
+  function formatSan(piece, from, to, flags, promotionPiece) {
+    const pieceType = piece.toLowerCase();
+    const pieceLabel = pieceType === "p" ? "" : pieceType.toUpperCase();
+    const captureMarker = flags.includes("c") ? "x" : "";
+    const promotionLabel = flags.includes("p") ? `=${(promotionPiece || DEFAULT_PROMOTION_PIECE).toUpperCase()}` : "";
+    if (flags.includes("k")) {
+      return "O-O";
+    }
+    if (flags.includes("q")) {
+      return "O-O-O";
+    }
+    return `${pieceLabel}${captureMarker}${to}${promotionLabel}`;
+  }
+
+  function applyMove(from, to, promotion) {
+    const fromSquare = parseSquare(from);
+    const toSquare = parseSquare(to);
+    if (!fromSquare || !toSquare) {
+      return null;
+    }
+    const piece = getPieceAt(fromSquare.x, fromSquare.y);
+    if (!piece) {
+      return null;
+    }
+
+    const validation = isPseudoLegalMove(
+      piece,
+      fromSquare.x,
+      fromSquare.y,
+      toSquare.x,
+      toSquare.y,
+      promotion
+    );
+    if (!validation.legal) {
+      return null;
+    }
+
+    const snapshot = {
+      boardState: boardState.map((row) => [...row]),
+      turnColor,
+      castlingRights,
+      halfmoveClock,
+      fullmoveNumber,
+    };
+    history.push(snapshot);
+
+    const originalTarget = getPieceAt(toSquare.x, toSquare.y);
+    boardState[fromSquare.y][fromSquare.x] = null;
+    let movedPiece = piece;
+    if (validation.flags.includes("p")) {
+      const nextPiece = (promotion || DEFAULT_PROMOTION_PIECE).toLowerCase();
+      movedPiece = turnColor === "w" ? nextPiece.toUpperCase() : nextPiece;
+    }
+    boardState[toSquare.y][toSquare.x] = movedPiece;
+
+    if (validation.flags.includes("k")) {
+      const rookFromX = 7;
+      const rookToX = 5;
+      boardState[fromSquare.y][rookToX] = boardState[fromSquare.y][rookFromX];
+      boardState[fromSquare.y][rookFromX] = null;
+    } else if (validation.flags.includes("q")) {
+      const rookFromX = 0;
+      const rookToX = 3;
+      boardState[fromSquare.y][rookToX] = boardState[fromSquare.y][rookFromX];
+      boardState[fromSquare.y][rookFromX] = null;
+    }
+
+    updateCastlingRightsOnMove(piece, fromSquare.x, fromSquare.y, toSquare.x, toSquare.y, originalTarget);
+    if (piece.toLowerCase() === "p" || originalTarget) {
+      halfmoveClock = 0;
+    } else {
+      halfmoveClock += 1;
+    }
+    if (turnColor === "b") {
+      fullmoveNumber += 1;
+    }
+    turnColor = turnColor === "w" ? "b" : "w";
+
+    const san = formatSan(piece, from, to, validation.flags, promotion);
+    return {
+      from,
+      to,
+      piece: piece.toLowerCase(),
+      captured: originalTarget ? originalTarget.toLowerCase() : undefined,
+      promotion: validation.flags.includes("p") ? (promotion || DEFAULT_PROMOTION_PIECE).toLowerCase() : undefined,
+      flags: validation.flags,
+      san,
+    };
+  }
+
+  function generateMoves() {
+    const legalMoves = [];
+    for (let y = 0; y < 8; y += 1) {
+      for (let x = 0; x < 8; x += 1) {
+        const piece = getPieceAt(x, y);
+        if (!piece || getPieceColor(piece) !== turnColor) {
+          continue;
+        }
+        for (let toY = 0; toY < 8; toY += 1) {
+          for (let toX = 0; toX < 8; toX += 1) {
+            if (toX === x && toY === y) {
+              continue;
+            }
+            const from = getSquareName(x, y);
+            const to = getSquareName(toX, toY);
+            const validation = isPseudoLegalMove(piece, x, y, toX, toY, DEFAULT_PROMOTION_PIECE);
+            if (!validation.legal) {
+              continue;
+            }
+            legalMoves.push({
+              from,
+              to,
+              piece: piece.toLowerCase(),
+              captured: getPieceAt(toX, toY)?.toLowerCase(),
+              promotion: validation.flags.includes("p") ? DEFAULT_PROMOTION_PIECE : undefined,
+              flags: validation.flags,
+              san: formatSan(piece, from, to, validation.flags, DEFAULT_PROMOTION_PIECE),
+            });
+          }
+        }
+      }
+    }
+    return legalMoves;
+  }
+
+  function reset() {
+    load(START_FEN);
+  }
+
+  function load(fen) {
+    const tokens = String(fen || "").trim().split(/\s+/);
+    if (tokens.length < 2) {
+      return false;
+    }
+    try {
+      boardState = parseFenBoard(tokens[0]);
+    } catch (error) {
+      return false;
+    }
+    turnColor = tokens[1] === "b" ? "b" : "w";
+    castlingRights = tokens[2] && tokens[2] !== "-" ? tokens[2] : "-";
+    halfmoveClock = Number(tokens[4]) || 0;
+    fullmoveNumber = Number(tokens[5]) || 1;
+    history = [];
+    return true;
+  }
+
+  function fen() {
+    return `${serializeFenBoard()} ${turnColor} ${castlingRights || "-"} - ${halfmoveClock} ${fullmoveNumber}`;
+  }
+
+  function turn() {
+    return turnColor;
+  }
+
+  function undo() {
+    const previousState = history.pop();
+    if (!previousState) {
+      return null;
+    }
+    boardState = previousState.boardState.map((row) => [...row]);
+    turnColor = previousState.turnColor;
+    castlingRights = previousState.castlingRights;
+    halfmoveClock = previousState.halfmoveClock;
+    fullmoveNumber = previousState.fullmoveNumber;
+    return true;
+  }
+
+  function moves(options = {}) {
+    const moveList = generateMoves();
+    if (options.verbose) {
+      return moveList;
+    }
+    return moveList.map((item) => item.san);
+  }
+
+  function game_over() {
+    return generateMoves().length === 0;
+  }
+
+  reset();
+
+  return {
+    reset,
+    load,
+    fen,
+    turn,
+    move: applyMove,
+    undo,
+    moves,
+    game_over,
+  };
+}
+
+function createFallbackBoard(targetElement) {
+  const unicodePieces = {
+    P: "♙",
+    N: "♘",
+    B: "♗",
+    R: "♖",
+    Q: "♕",
+    K: "♔",
+    p: "♟",
+    n: "♞",
+    b: "♝",
+    r: "♜",
+    q: "♛",
+    k: "♚",
+  };
+
+  let currentFen = START_FEN;
+  let selectedSquare = null;
+  let renderedBoard = [];
+
+  function parseBoardForRender(fen) {
+    const boardFen = String(fen).split(" ")[0];
+    return boardFen.split("/").map((row) => {
+      const parsedRow = [];
+      row.split("").forEach((char) => {
+        const emptyCount = Number(char);
+        if (Number.isInteger(emptyCount) && emptyCount > 0) {
+          for (let i = 0; i < emptyCount; i += 1) {
+            parsedRow.push(null);
+          }
+        } else {
+          parsedRow.push(char);
+        }
+      });
+      return parsedRow;
+    });
+  }
+
+  function render() {
+    renderedBoard = parseBoardForRender(currentFen);
+    targetElement.innerHTML = "";
+    targetElement.classList.add("fallback-chessboard");
+
+    for (let y = 0; y < 8; y += 1) {
+      for (let x = 0; x < 8; x += 1) {
+        const square = getSquareName(x, y);
+        const piece = renderedBoard[y][x];
+        const squareButton = document.createElement("button");
+        squareButton.type = "button";
+        squareButton.dataset.square = square;
+        squareButton.className = `fallback-square ${(x + y) % 2 === 0 ? "fallback-light" : "fallback-dark"}${
+          selectedSquare === square ? " fallback-selected" : ""
+        }`;
+        squareButton.textContent = piece ? unicodePieces[piece] : "";
+        squareButton.setAttribute("aria-label", `Square ${square}`);
+        squareButton.addEventListener("click", () => {
+          if (!game) {
+            return;
+          }
+          const selected = parseSquare(selectedSquare || "");
+          const sourcePiece =
+            selected && renderedBoard[selected.y] && renderedBoard[selected.y][selected.x]
+              ? renderedBoard[selected.y][selected.x]
+              : null;
+          if (!selectedSquare || !sourcePiece) {
+            if (!piece) {
+              return;
+            }
+            const colorCode = piece === piece.toUpperCase() ? "w" : "b";
+            const pieceCode = `${colorCode}${piece.toUpperCase()}`;
+            if (handleDragStart(square, pieceCode) === false) {
+              return;
+            }
+            selectedSquare = square;
+            render();
+            return;
+          }
+
+          if (selectedSquare === square) {
+            selectedSquare = null;
+            render();
+            return;
+          }
+
+          const result = handleMove(selectedSquare, square);
+          selectedSquare = null;
+          if (result === "snapback") {
+            render();
+            return;
+          }
+          board.position(game.fen());
+        });
+        targetElement.appendChild(squareButton);
+      }
+    }
+  }
+
+  return {
+    position(fen) {
+      currentFen = fen === "start" ? START_FEN : fen;
+      render();
+    },
+    resize() {},
+  };
+}
+
+const game = hasChessRuntime ? new Chess() : createFallbackChessGame();
 let activeLessonIndex = 0;
 let feedbackMessage = "";
 let selectedElo = MIN_ELO;
@@ -169,7 +723,7 @@ let reviewRequest = null;
 const reviewHistory = [];
 
 function hasFullChessRuntime() {
-  return hasChessRuntime && hasChessboardRuntime && Boolean(game);
+  return Boolean(game);
 }
 
 function showRuntimeError(message) {
@@ -178,20 +732,21 @@ function showRuntimeError(message) {
 }
 
 function ensureBoardReady() {
-  if (!hasChessboardRuntime) {
-    return;
-  }
-
   if (board) {
     return;
   }
 
-  board = Chessboard("chess-board", {
-    draggable: true,
-    position: "start",
-    onDragStart: handleDragStart,
-    onDrop: handleMove,
-  });
+  if (hasChessboardRuntime) {
+    board = Chessboard("chess-board", {
+      draggable: true,
+      position: "start",
+      onDragStart: handleDragStart,
+      onDrop: handleMove,
+    });
+  } else {
+    board = createFallbackBoard(boardElement);
+    board.position(game?.fen?.() || "start");
+  }
 
   if (!boardResizeObserver && typeof ResizeObserver !== "undefined") {
     boardResizeObserver = new ResizeObserver(() => {
