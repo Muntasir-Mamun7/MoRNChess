@@ -131,14 +131,23 @@
         </div>
 
         <aside id="about" class="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-          <h2 class="mb-4 text-xl font-semibold text-emerald-300">AI Tutor Instructions</h2>
-          <button
-            id="engine-mode-toggle"
-            type="button"
-            class="mb-4 w-full rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
-          >
-            Toggle Engine Match
-          </button>
+          <h2 class="mb-4 text-xl font-semibold text-emerald-300">Play Controls & Tutor</h2>
+          <div class="mb-4 grid gap-2">
+            <button
+              id="ai-mode-toggle"
+              type="button"
+              class="w-full rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+            >
+              Play vs AI
+            </button>
+            <button
+              id="local-mode-toggle"
+              type="button"
+              class="w-full rounded-lg border border-sky-500/50 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-300 transition hover:bg-sky-500/20"
+            >
+              Play In Person
+            </button>
+          </div>
           <p id="mode-status" class="mb-4 text-xs uppercase tracking-[0.2em] text-slate-400">Mode: Lesson</p>
           <div
             id="lesson-instructions"
