@@ -318,7 +318,7 @@ function getFallbackEngineMove() {
       score += pieceValues[move.captured] ?? 0;
     }
     if (move.flags.includes("p")) {
-      score += (pieceValues[move.promotion] ?? pieceValues[DEFAULT_PROMOTION_PIECE]) - pieceValues.p;
+      score += (pieceValues[move.promotion] ?? pieceValues.q) - pieceValues.p;
     }
     if (move.san.includes("+")) {
       score += 0.5;
