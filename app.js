@@ -118,6 +118,7 @@ const BOARD_RESIZE_DEBOUNCE_MS = 60;
 const BOARD_RESIZE_DELAY_MS = 120;
 const ENGINE_FALLBACK_DELAY_MS = 450;
 const DEFAULT_PROMOTION_PIECE = "q";
+const PIECE_THEME_URL = "https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/www/img/chesspieces/neo/{piece}.png";
 
 const boardElement = document.getElementById("chess-board");
 const instructionsElement = document.getElementById("lesson-instructions");
@@ -655,7 +656,25 @@ function createFallbackBoard(targetElement) {
         squareButton.className = `fallback-square ${(x + y) % 2 === 0 ? "fallback-light" : "fallback-dark"}${
           selectedSquare === square ? " fallback-selected" : ""
         }`;
-        squareButton.textContent = piece ? unicodePieces[piece] : "";
+        const pieceSpan = document.createElement("span");
+        pieceSpan.className = "fallback-piece";
+        pieceSpan.textContent = piece ? unicodePieces[piece] : "";
+        squareButton.appendChild(pieceSpan);
+
+        if (y === 7) {
+          const fileLabel = document.createElement("span");
+          fileLabel.className = "fallback-file-label";
+          fileLabel.textContent = FILE_NAMES[x];
+          squareButton.appendChild(fileLabel);
+        }
+
+        if (x === 0) {
+          const rankLabel = document.createElement("span");
+          rankLabel.className = "fallback-rank-label";
+          rankLabel.textContent = String(8 - y);
+          squareButton.appendChild(rankLabel);
+        }
+
         squareButton.setAttribute("aria-label", `Square ${square}`);
         squareButton.addEventListener("click", () => {
           if (!game) {
@@ -740,6 +759,8 @@ function ensureBoardReady() {
     board = Chessboard("chess-board", {
       draggable: true,
       position: "start",
+      showNotation: true,
+      pieceTheme: PIECE_THEME_URL,
       onDragStart: handleDragStart,
       onDrop: handleMove,
     });
