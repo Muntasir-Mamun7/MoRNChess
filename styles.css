@@ -7,14 +7,10 @@ body {
   margin-inline: auto;
 }
 
-#chess-board .board-b72b1 {
-  width: 100% !important;
+#chess-board > div {
   max-width: 100%;
+  margin-inline: auto;
   touch-action: manipulation;
-}
-
-#chess-board .square-55d63 {
-  box-sizing: border-box;
 }
 
 .chessboard-placeholder {
